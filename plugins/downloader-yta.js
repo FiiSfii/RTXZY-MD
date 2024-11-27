@@ -1,29 +1,50 @@
-let fetch = require('node-fetch');
+const fetch = require('node-fetch');
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-  if (!text) throw `*Example:* ${usedPrefix + command} https://www.youtube.com/watch?v=Z28dtg_QmFw`;
-  m.reply(wait)
-  try {
-    const response = await fetch(`https://api.botcahx.eu.org/api/dowloader/yt?url=${encodeURIComponent(text)}&apikey=${btc}`);
-    const result = await response.json();
-
-    if (result.status && result.result && result.result.mp3) {
-      await conn.sendMessage(m.chat, { 
-        audio: { url: result.result.mp3 }, 
-        mimetype: 'audio/mpeg' 
-      }, { quoted: m });
-    } else {
-      throw 'Error: Unable to fetch audio';
+    if (!text) {
+        throw `Penggunaan:\n${usedPrefix + command} <link/query>\n\nContoh:\n${usedPrefix + command} https://youtube.com/watch?v=dQw4w9WgXcQ`;
     }
-  } catch (error) {
-    throw eror
-  }
+    try {
+        m.reply('⏳ Sedang memproses, mohon tunggu...');
+
+        let response = await ytdl(text);
+
+        let videoUrl = response.data?.mp3;
+        if (!videoUrl) {
+            throw 'Maaf, video tidak dapat ditemukan atau diunduh.';
+        }
+
+        await conn.sendMessage(m.chat, { audio: { url: videoUrl }, mimetype: "audio/mp4", ptt: false }, { quoted: m });
+
+    } catch (error) {
+        console.error(error);
+        m.reply(`❌ Terjadi kesalahan: ${error.message || error}`);
+    }
 };
 
-handler.help = handler.command = ['ytmp3', 'yta'];
-handler.tags = ['downloader'];
-handler.exp = 0;
-handler.limit = true;
-handler.premium = false;
+handler.help = ["ytmp3 <link/query>"];
+handler.tags = ["downloader"];
+handler.command = /^ytmp3$/i;
 
 module.exports = handler;
+
+async function ytdl(url) {
+    const response = await fetch('https://shinoa.us.kg/api/download/ytdl', {
+        method: 'POST',
+        headers: {
+            'accept': '*/*',
+            'api_key': 'free',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            text: url
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+      }
